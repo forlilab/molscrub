@@ -293,9 +293,8 @@ def _exit_if_openpyxl_unavailable():
             print("  pip install openpyxl")
         else:
             raise e  # import error not from openpyxl, expose traceback
-        is_available = False
         sys.exit()
-    return is_available
+    return
 
 # input
 extension = pathlib.Path(args.input).suffix
@@ -312,10 +311,10 @@ elif extension == ".smi" or extension == ".smiles":
 elif extension == ".cxsmiles":
     supplier = SMIMolSupplierWrapper(args.input, is_enamine_cxsmiles=True, titleLine=True)
 elif extension == ".csv":
-    supplier = read_spreadsheet(args.input, args.column)
+    supplier = read_spreadsheet(args.input, colNum=args.column)
 elif extension == ".xlsx":
     _exit_if_openpyxl_unavailable()
-    supplier = read_spreadsheet(args.input, args.column)
+    supplier = read_spreadsheet(args.input, colNum=args.column)
 elif extension == ".cdxml" or extension == ".cdx":
     supplier = list(Chem.MolsFromCDXMLFile(args.input))
 else:
