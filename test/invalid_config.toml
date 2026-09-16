@@ -1,0 +1,7 @@
+# This file provides an invalid key
+# it should error out. 
+invalid_key = "irrelevant"
+
+ph = 6.0 
+skip_acidbase = false
+skip_tautomers = true

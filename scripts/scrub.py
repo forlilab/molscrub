@@ -8,6 +8,7 @@ from os import linesep
 import pathlib
 
 import sys
+import tomllib
 
 
 from molscrub import Scrub
@@ -233,6 +234,7 @@ basic.add_argument("--skip_gen3d", help="skip generation of 3D coordinates (also
 basic.add_argument("--keep_all_frags", help="Keeps all mol fragments (default is to keep largest only)", action="store_true")
 basic.add_argument("--column", help="if input is .csv or .xlsx, specify which column contains the SMILES (0-index; default=0)", default=0, type=int)
 basic.add_argument("--do_stereoisomers", help="enumerate stereoisomers, including those created by acid/base or tautomerization", action="store_true")
+basic.add_argument("--config", help="supply molscrub options via a toml file")
 
 misc = parser.add_argument_group("miscellaneous")
 misc.add_argument("--cpu", help="number of processes to run in parallel", default=0, type=int)
@@ -268,7 +270,34 @@ geom.add_argument("--energy_threshold", help="energy threshold for conformer dis
 geom.add_argument("--use_random_coords", help="use random coordinates for more robust (but slightly slower) embedding", action="store_true")
 geom.add_argument("--num_etkdg_attempts", help="number of times to retry conformer generation with a different random seed if it fails (default=1)", type=int, default=1)
 
+# parse cli
+args = parser.parse_known_args()[0]
+
+# parse toml
+if args.config is not None:
+    try:
+        with open(args.config, "rb") as f:
+            config = tomllib.load(f)
+    except Exception as e:
+        print(e)
+        raise("Could not parse config toml file")
+
+    if args.debug is not None:
+        print("User config file: ")
+        print(config)
+
+    # Validate keys against known arguments
+    valid_keys = {a.dest for a in parser._actions if a.dest != "help"}
+    unknown = set(config) - valid_keys
+    if unknown:
+        parser.error(f"Unknown option(s) in config: {', '.join(sorted(unknown))}")
+
+    # TOML values become defaults; CLI args override them
+    parser.set_defaults(**config)
+
+# parse all options
 args = parser.parse_args()
+
 
 if args.ph_low is None and args.ph_high is None:
     ph_low = args.ph
@@ -296,7 +325,6 @@ def _exit_if_openpyxl_unavailable():
         sys.exit()
     return
 
-# input
 extension = pathlib.Path(args.input).suffix
 if extension == ".sdf":
     # as of rdkit 2025.09.3, removeHs=True in the MolFromMolBlock code path
