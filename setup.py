@@ -2,12 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import fnmatch
 from setuptools import setup, find_packages
 
 
 # Path to the directory that contains this setup.py file.
 base_dir = os.path.abspath(os.path.dirname(__file__))
+
+with open(os.path.join(base_dir, "molscrub", "_version.py")) as f:
+    version = re.search(r'__version__ = "(.+)"', f.read()).group(1)
 
 
 def find_files(directory):
@@ -21,7 +25,7 @@ def find_files(directory):
 setup(
     name="molscrub",
     author="Forli Lab",
-    version="0.3.0",
+    version=version,
     author_email="forli@scripps.edu",
     url="https://github.com/forlilab/molscrub",
     description="Enumerate states of small organic molecules: 3D coordinates, tautomers, pH-based adjustments",
