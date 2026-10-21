@@ -316,7 +316,7 @@ def gen3d(
                 "uff": rdForceFieldHelpers.UFFOptimizeMoleculeConfs,
                 "mmff94": rdForceFieldHelpers.MMFFOptimizeMoleculeConfs,
                 "mmff94s": lambda mol, maxIters: rdForceFieldHelpers.MMFFOptimizeMoleculeConfs(
-                    mol, maxIters=maxIters, mmffVariant="mmff94s"
+                    mol, maxIters=maxIters, mmffVariant="MMFF94s"
                 ),
             }[ff]
             _energies = optimize_func(mol, maxIters=max_ff_iter)
