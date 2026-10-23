@@ -9,13 +9,6 @@ import pathlib
 
 import sys
 
-# tomllib is only available >3.11
-try: 
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib
-
-
 from molscrub import Scrub
 from molscrub import SMIMolSupplierWrapper
 from molscrub.core import load_model
@@ -37,6 +30,15 @@ try:
 except ImportError as e:
     _h5py_import_error = e
     _got_h5py = False
+
+# tomllib is only available >3.11
+try: 
+    import tomllib
+    _got_tomllib = True
+except ModuleNotFoundError as e:
+    _tomllib_import_error = e
+    _got_tomllib = False
+
 
 class SDWriter:
     """support Python's `with` statement and always write all conformers"""
@@ -280,6 +282,9 @@ args = parser.parse_known_args()[0]
 
 # parse toml
 if args.config is not None:
+    if not _got_tomllib:
+        print("tomllib is only available on Python >= 3.11")
+        raise _tomllib_import_error
     try:
         with open(args.config, "rb") as f:
             config = tomllib.load(f)
