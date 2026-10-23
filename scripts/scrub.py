@@ -8,7 +8,12 @@ from os import linesep
 import pathlib
 
 import sys
-import tomllib
+
+# tomllib is only available >3.11
+try: 
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 
 from molscrub import Scrub
