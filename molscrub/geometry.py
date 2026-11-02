@@ -225,7 +225,8 @@ def gen3d(
     ring_minimize=False,
     energy_threshold=0.5,
     debug=False,
-    num_etkdg_attempts = 1
+    num_etkdg_attempts = 1,
+    skip_aminefix = False
 ):
 
 
@@ -283,7 +284,29 @@ def gen3d(
     else:
         coords_list = []
         [coords_list.extend(fix_rings(mol, c, ring_minimize, energy_threshold, debug=debug, max_ff_iter=max_ff_iter, ff=ff)) for c in etkdg_coords]
-   
+
+    # non-ring amine_flips
+    swapped_coords = []
+    if not skip_aminefix:
+        from . import amine_flip as am
+        # do amine flip for none rings (rings are taken care of above.)
+        amines = am.find_n_nonRing_substituents(mol)
+        for coord in coords_list:
+            for amine in amines:
+                # only flip if there are no symmetries
+                symmetries = amine.equivalent_subs
+                num_subs = amine.num_subs
+                has_symmetry = len(symmetries) != 0
+                # 4 subs must have 3 symmetrical not to flip
+                # 3 subs must have 2 symmetrical not to flip
+                do_not_flip_p = has_symmetry and ((num_subs == 3 and len(symmetries[0]) >= 2) or (num_subs == 4 and len(symmetries) >= 3))
+
+
+                if not do_not_flip_p:
+                    swapped_coords.append(am.swap_substituents(mol, coord, amine.n_idx, amine.sub_idxs[0], amine.sub_idxs[1]))
+
+        coords_list.extend(swapped_coords)
+
     for coords in coords_list:
         c = Chem.Conformer(mol.GetNumAtoms())
         for i, (x, y, z) in enumerate(coords):
@@ -304,7 +327,7 @@ def gen3d(
         for coords in coords_list:
             print(am.molToXYZ(mol, coords))
 
-    if ring_minimize:
+    if ring_minimize or not skip_aminefix:
         final_mol = mol
     else:
         if ff == "espaloma":

@@ -92,6 +92,7 @@ class Scrub:
         skip_tautomers=False,
         do_stereoisomers=False,
         skip_ringfix=False,
+        skip_aminefix=False,
         skip_gen3d=False,
         template=None,
         template_smarts=None,
