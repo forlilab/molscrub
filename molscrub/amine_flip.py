@@ -68,7 +68,8 @@ def find_n_nonRing_substituents(mol: Chem.Mol) -> list[AmineGroup]:
     with two substituents (non-ring atoms).
     Return (n_idx, sub1_idx, sub2_idx) if found, else None.
     """
-    smarts = '[NX4H1,NX3]'
+#    smarts = '[NX4H1,NX3]'
+    smarts = "[N;!R;X3,X4;!$(N=*);!$(NC=[O,S])]"
     patt = Chem.MolFromSmarts(smarts)
 
     matches = mol.GetSubstructMatches(patt)
@@ -80,7 +81,7 @@ def find_n_nonRing_substituents(mol: Chem.Mol) -> list[AmineGroup]:
         n_atom = mol.GetAtomWithIdx(n_idx)
 
         neighbors = n_atom.GetNeighbors()
-        sub_neighbors = [a for a in neighbors if not a.IsInRing()]
+        sub_neighbors = [a for a in neighbors]
 
         if len(sub_neighbors) == 3: # 3 amine substituents
             sub1_idx = sub_neighbors[0].GetIdx()
