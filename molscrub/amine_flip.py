@@ -94,7 +94,8 @@ def find_n_nonRing_substituents(mol: Chem.Mol) -> list[AmineGroup]:
             sub4_idx = sub_neighbors[3].GetIdx()
             amines.append(AmineGroup(mol, n_idx, len(sub_neighbors), [sub1_idx, sub2_idx, sub3_idx, sub4_idx]))
         else:
-            raise ValueError("Something went wrong here")
+            # ignore nitrogens with 1 or 2 subs. 
+            continue
 
     return amines
 
