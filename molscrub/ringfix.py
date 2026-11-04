@@ -284,7 +284,7 @@ def rotate_amine_substituents(mol: Mol,
         tmp = []
         for coords in coords_list:
             
-            new_coords =  am.swap_substituents(mol, coords, n_idx, sub1_idx, sub2_idx, ring_atoms)
+            new_coords =  am.swap_substituents(mol, coords, n_idx, sub1_idx, sub2_idx)
 
             mol_with_confs = add_conformers_to_mol(mol, [coords, new_coords])
             # compare new coords with old coords
