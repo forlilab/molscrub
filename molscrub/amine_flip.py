@@ -61,6 +61,21 @@ class AmineGroup:
         group = get_substituent_tree(self.mol, idx, self.n_idx)
         return len(group)
 
+
+    def do_not_flip_p(self):
+        """
+        determine if present amine should not be flipped;
+        i.e. if there are symmetries. 
+        """
+        symmetries = self.equivalent_subs
+        num_subs = self.num_subs
+        has_symmetry = len(symmetries) != 0
+        # 4 subs must have 3 symmetrical not to flip
+        # 3 subs must have 2 symmetrical not to flip
+        do_not_flip_p = has_symmetry and ((num_subs == 3 and len(symmetries[0]) >= 2) or (num_subs == 4 and len(symmetries) >= 3))
+        return do_not_flip_p
+
+
 # non-ring amine flips
 def find_n_nonRing_substituents(mol: Chem.Mol) -> list[AmineGroup]:
     """

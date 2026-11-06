@@ -293,16 +293,8 @@ def gen3d(
         amines = am.find_n_nonRing_substituents(mol)
         for coord in coords_list:
             for amine in amines:
-                # only flip if there are no symmetries
-                symmetries = amine.equivalent_subs
-                num_subs = amine.num_subs
-                has_symmetry = len(symmetries) != 0
-                # 4 subs must have 3 symmetrical not to flip
-                # 3 subs must have 2 symmetrical not to flip
-                do_not_flip_p = has_symmetry and ((num_subs == 3 and len(symmetries[0]) >= 2) or (num_subs == 4 and len(symmetries) >= 3))
-
-
-                if not do_not_flip_p:
+                # check for symmetries
+                if not amine.do_not_flip_p():
                     swapped_coords.append(am.swap_substituents(mol, coord, amine.n_idx, amine.sub_idxs[0], amine.sub_idxs[1]))
 
         coords_list.extend(swapped_coords)
