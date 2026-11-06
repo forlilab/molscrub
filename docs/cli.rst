@@ -53,6 +53,11 @@ Basic Options
     part of molscrub, so it's not advisable to use this option. See also: 
     ``--ring_minimize``, ``--energy_threshold``, ``--ff``, ``--max_ff_iter``. 
 
+.. option:: --skip_aminefix
+
+    skip the flipping of substituents in non-ring amine groups. 
+    When not used, molscrub will generate both conformers of an 
+    amine group.
 
 .. option:: --skip_gen3d 
 
