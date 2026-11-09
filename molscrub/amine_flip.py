@@ -72,7 +72,7 @@ class AmineGroup:
         has_symmetry = len(symmetries) != 0
         # 4 subs must have 3 symmetrical not to flip
         # 3 subs must have 2 symmetrical not to flip
-        do_not_flip_p = has_symmetry and ((num_subs == 3 and len(symmetries[0]) >= 2) or (num_subs == 4 and len(symmetries) >= 3))
+        do_not_flip_p = has_symmetry and ((num_subs == 3 and len(symmetries[0]) >= 2) or (num_subs == 4 and len(symmetries[0]) >= 3))
         return do_not_flip_p
 
 
