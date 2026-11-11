@@ -237,6 +237,7 @@ basic.add_argument("--ph", help="pH value for acid/base transformations", defaul
 basic.add_argument("--skip_acidbase", help="skip enumeration of acid/base conjugates", action="store_true")
 basic.add_argument("--skip_tautomers", help="skip enumeration of tautomers", action="store_true")
 basic.add_argument("--skip_ringfix", help="skip fixes of six-member rings", action="store_true")
+basic.add_argument("--skip_aminefix", help="skip amine flips for non-ring amines", action="store_true")
 basic.add_argument("--skip_gen3d", help="skip generation of 3D coordinates (also skips ring fixes)", action="store_true")
 basic.add_argument("--keep_all_frags", help="Keeps all mol fragments (default is to keep largest only)", action="store_true")
 basic.add_argument("--column", help="if input is .csv or .xlsx, specify which column contains the SMILES (0-index; default=0)", default=0, type=int)
@@ -443,6 +444,7 @@ scrub = Scrub(
     do_stereoisomers=args.do_stereoisomers,
     skip_ringfix=args.skip_ringfix,
     skip_gen3d=args.skip_gen3d,
+    skip_aminefix=args.skip_aminefix,
     template=template_mol,
     template_smarts=template_smarts,
     do_gen2d=do_gen2d,

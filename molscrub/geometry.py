@@ -17,7 +17,7 @@ from rdkit.Chem.rdchem import Mol
 from rdkit.Chem import AllChem
 
 from .ringfix import fix_rings
-from .utils import find_best_conformer
+from .utils import find_best_conformer, optimize_conformers
 
 
 def constrained_embeding(
@@ -225,7 +225,8 @@ def gen3d(
     ring_minimize=False,
     energy_threshold=0.5,
     debug=False,
-    num_etkdg_attempts = 1
+    num_etkdg_attempts = 1,
+    skip_aminefix = False
 ):
 
 
@@ -283,7 +284,25 @@ def gen3d(
     else:
         coords_list = []
         [coords_list.extend(fix_rings(mol, c, ring_minimize, energy_threshold, debug=debug, max_ff_iter=max_ff_iter, ff=ff)) for c in etkdg_coords]
-   
+
+    # non-ring amine_flips
+    swapped_coords = []
+    if not skip_aminefix:
+        from . import amine_flip as am
+        # do amine flip for none rings (rings are taken care of above.)
+        amines = [a for a in am.find_n_nonRing_substituents(mol) if not a.do_not_flip_p()]
+        for coord in coords_list:
+            # loop over all 2^n combinations of amine flips, but the loop
+            # starts at 1 to make sure at least one amine is flipped
+            for combo_id in range(1, 2**len(amines)):
+                amines_idxs_to_flip = [idx for idx in range(len(amines)) if (combo_id>>idx) & 1] 
+                new_coord = coord.copy()
+                for idx in amines_idxs_to_flip:
+                    amine = amines[idx]
+                    new_coord = am.swap_substituents(mol, new_coord, amine.n_idx, amine.sub_idxs[0], amine.sub_idxs[1])
+                swapped_coords.append(new_coord)
+        coords_list.extend(swapped_coords)
+
     for coords in coords_list:
         c = Chem.Conformer(mol.GetNumAtoms())
         for i, (x, y, z) in enumerate(coords):
@@ -304,7 +323,9 @@ def gen3d(
         for coords in coords_list:
             print(am.molToXYZ(mol, coords))
 
-    if ring_minimize:
+    if ring_minimize or not skip_aminefix:
+        # optimize geometry just in case
+        mol, _ = optimize_conformers(mol, ff, max_ff_iter)
         final_mol = mol
     else:
         if ff == "espaloma":

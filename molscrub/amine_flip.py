@@ -3,6 +3,118 @@ import numpy as np
 import math
 from .utils import rotation_matrix
 
+from dataclasses import dataclass, field
+from typing import Literal
+from collections import defaultdict
+
+
+@dataclass
+class AmineGroup:
+    """
+    Dataclass to store substituents of non-ring
+    amine groups. 
+    """
+    mol: Chem.Mol
+    n_idx: int # index of nitrogen atom
+    num_subs: Literal[3,4]  # number of atoms linked to M. can only be 3 or 4. 
+    sub_idxs: list[int | None] # ranked idxs by size. One can be None, depending if amine has 3 or 4 subs. 
+
+    # filled in automatically
+    equivalent_subs: list[list[int]] = field(init=False, default_factory=list)
+    _ranks: list[int] = field(init=False, repr=False, default_factory=list)
+
+    def __post_init__(self):
+        # symmetry classes: equivalent atoms share the same rank
+        self._ranks = list(Chem.CanonicalRankAtoms(self.mol, breakTies=False))
+
+        real_idxs = [i for i in self.sub_idxs if i is not None]
+
+        # sort by size, then by symmetry rank so ties are deterministic
+        idxs = sorted(real_idxs, key=lambda i: (self._get_sub_size(i), self._ranks[i]))
+
+        if self.num_subs == 4:
+            self.sub_idxs = idxs
+        elif self.num_subs == 3:
+            self.sub_idxs = [idxs[0], None, idxs[1], idxs[2]]  # None = sub to be flipped
+        else:
+            raise ValueError("Invalid number of substituents in amine group")
+
+        # group substituents whose attachment atoms are symmetry-equivalent
+        classes = defaultdict(list)
+        for i in real_idxs:
+            classes[self._ranks[i]].append(i)
+        self.equivalent_subs = [group for group in classes.values() if len(group) > 1]
+
+    @property
+    def has_symmetry(self) -> bool:
+        """True if at least two substituents are identical."""
+        return bool(self.equivalent_subs)
+
+    def are_equivalent(self, idx1: int, idx2: int) -> bool:
+        """True if the substituents rooted at idx1 and idx2 are identical."""
+        return self._ranks[idx1] == self._ranks[idx2]
+
+    def _get_sub_size(self, idx):
+        """
+        gets number of attached atoms to given index in mol
+        """
+        group = get_substituent_tree(self.mol, idx, self.n_idx)
+        return len(group)
+
+
+    def do_not_flip_p(self):
+        """
+        determine if present amine should not be flipped;
+        i.e. if there are symmetries. 
+        """
+        symmetries = self.equivalent_subs
+        num_subs = self.num_subs
+        has_symmetry = len(symmetries) != 0
+        # 4 subs must have 3 symmetrical not to flip
+        # 3 subs must have 2 symmetrical not to flip
+        do_not_flip_p = has_symmetry and ((num_subs == 3 and len(symmetries[0]) >= 2) or (num_subs == 4 and len(symmetries[0]) >= 3))
+        return do_not_flip_p
+
+
+# non-ring amine flips
+def find_n_nonRing_substituents(mol: Chem.Mol) -> list[AmineGroup]:
+    """
+    Find a positively charged N atom in a non-ring
+    with two substituents (non-ring atoms).
+    Return (n_idx, sub1_idx, sub2_idx) if found, else None.
+    """
+#    smarts = '[NX4H1,NX3]'
+    smarts = "[N;!R;X3,X4;!$(N=*);!$(NC=[O,S])]"
+    patt = Chem.MolFromSmarts(smarts)
+
+    matches = mol.GetSubstructMatches(patt)
+
+    amines = []
+
+    for match in matches:
+        n_idx = match[0]
+        n_atom = mol.GetAtomWithIdx(n_idx)
+
+        neighbors = n_atom.GetNeighbors()
+        sub_neighbors = [a for a in neighbors]
+
+        if len(sub_neighbors) == 3: # 3 amine substituents
+            sub1_idx = sub_neighbors[0].GetIdx()
+            sub2_idx = sub_neighbors[1].GetIdx()
+            sub3_idx = sub_neighbors[2].GetIdx()
+            amines.append(AmineGroup(mol, n_idx, len(sub_neighbors), [sub1_idx, sub2_idx, sub3_idx]))
+        elif len(sub_neighbors) == 4: # case with 4 substituent
+            sub1_idx = sub_neighbors[0].GetIdx()
+            sub2_idx = sub_neighbors[1].GetIdx()
+            sub3_idx = sub_neighbors[2].GetIdx()
+            sub4_idx = sub_neighbors[3].GetIdx()
+            amines.append(AmineGroup(mol, n_idx, len(sub_neighbors), [sub1_idx, sub2_idx, sub3_idx, sub4_idx]))
+        else:
+            # ignore nitrogens with 1 or 2 subs. 
+            continue
+
+    return amines
+
 def find_n_ring_substituents(mol):
     """
     Find a positively charged N atom in a ring
@@ -57,7 +169,7 @@ def get_substituent_tree(mol, root_idx, exclude_idx):
 
     return substituent
 
-def swap_substituents(mol, coords, n_idx, sub1_idx, sub2_idx, ring_atom_indices):
+def swap_substituents(mol, coords, n_idx, sub1_idx, sub2_idx):
 
     """
     Rotate the two substituents around the axis bisecting the angle between the two ring atoms bonded to nitrogen.
@@ -66,7 +178,6 @@ def swap_substituents(mol, coords, n_idx, sub1_idx, sub2_idx, ring_atom_indices)
     n_idx: index of nitrogen atom
     sub1_idx: index of first substituent atom
     sub2_idx: index of second substituent atom; may be None
-    ring_atom_indices: list of indices of atoms forming the ring
 
     Returns a copy of the modified coords.
     """
