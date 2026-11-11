@@ -17,7 +17,7 @@ from rdkit.Chem.rdchem import Mol
 from rdkit.Chem import AllChem
 
 from .ringfix import fix_rings
-from .utils import find_best_conformer
+from .utils import find_best_conformer, optimize_conformers
 
 
 def constrained_embeding(
@@ -324,6 +324,8 @@ def gen3d(
             print(am.molToXYZ(mol, coords))
 
     if ring_minimize or not skip_aminefix:
+        # optimize geometry just in case
+        mol, _ = optimize_conformers(mol, ff, max_ff_iter)
         final_mol = mol
     else:
         if ff == "espaloma":
