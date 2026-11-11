@@ -290,13 +290,17 @@ def gen3d(
     if not skip_aminefix:
         from . import amine_flip as am
         # do amine flip for none rings (rings are taken care of above.)
-        amines = am.find_n_nonRing_substituents(mol)
+        amines = [a for a in am.find_n_nonRing_substituents(mol) if not a.do_not_flip_p()]
         for coord in coords_list:
-            for amine in amines:
-                # check for symmetries
-                if not amine.do_not_flip_p():
-                    swapped_coords.append(am.swap_substituents(mol, coord, amine.n_idx, amine.sub_idxs[0], amine.sub_idxs[1]))
-
+            # loop over all 2^n combinations of amine flips, but the loop
+            # starts at 1 to make sure at least one amine is flipped
+            for combo_id in range(1, 2**len(amines)):
+                amines_idxs_to_flip = [idx for idx in range(len(amines)) if (combo_id>>idx) & 1] 
+                new_coord = coord.copy()
+                for idx in amines_idxs_to_flip:
+                    amine = amines[idx]
+                    new_coord = am.swap_substituents(mol, new_coord, amine.n_idx, amine.sub_idxs[0], amine.sub_idxs[1])
+                swapped_coords.append(new_coord)
         coords_list.extend(swapped_coords)
 
     for coords in coords_list:
